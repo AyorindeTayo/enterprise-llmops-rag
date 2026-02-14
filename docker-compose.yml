@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # FastAPI RAG Gateway
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile
+    container_name: llmops-api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - USE_DEMO_MODE=true
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./vector_store:/app/vector_store
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - llmops-network
+
+  # Streamlit Frontend
+  streamlit:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.streamlit
+    container_name: llmops-streamlit
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    depends_on:
+      api:
+        condition: service_healthy
+    volumes:
+      - ./frontend_streamlit:/app/frontend_streamlit
+    networks:
+      - llmops-network
+
+networks:
+  llmops-network:
+    driver: bridge
+
+volumes:
+  vector_store:
+  logs:

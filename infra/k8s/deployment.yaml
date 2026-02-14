@@ -1,0 +1,139 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llmops-rag-api
+  namespace: llmops
+  labels:
+    app: rag-api
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: rag-api
+  template:
+    metadata:
+      labels:
+        app: rag-api
+        version: v1
+    spec:
+      containers:
+      - name: api-gateway
+        image: llmops-rag-api:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+          name: http
+          protocol: TCP
+        
+        env:
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llmops-secrets
+              key: openai-api-key
+        - name: USE_DEMO_MODE
+          value: "false"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        
+        resources:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 40
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 20
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 2
+        
+        volumeMounts:
+        - name: vector-store
+          mountPath: /app/vector_store
+        - name: logs
+          mountPath: /app/logs
+      
+      volumes:
+      - name: vector-store
+        persistentVolumeClaim:
+          claimName: vector-store-pvc
+      - name: logs
+        persistentVolumeClaim:
+          claimName: logs-pvc
+      
+      restartPolicy: Always
+      imagePullSecrets:
+      - name: docker-registry-secret
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llmops-streamlit
+  namespace: llmops
+  labels:
+    app: streamlit-ui
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: streamlit-ui
+  template:
+    metadata:
+      labels:
+        app: streamlit-ui
+        version: v1
+    spec:
+      containers:
+      - name: streamlit
+        image: llmops-streamlit:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8501
+          name: http
+          protocol: TCP
+        
+        env:
+        - name: API_URL
+          value: "http://llmops-rag-api-service:8000"
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llmops-secrets
+              key: openai-api-key
+        
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        
+        livenessProbe:
+          httpGet:
+            path: /_stcore/health
+            port: 8501
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      
+      restartPolicy: Always

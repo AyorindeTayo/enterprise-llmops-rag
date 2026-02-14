@@ -1,0 +1,127 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alert-rules
+  namespace: llmops
+data:
+  alert-rules.yml: |
+    groups:
+    - name: kubernetes_cluster
+      interval: 30s
+      rules:
+      # Pod Alerts
+      - alert: PodCrashLooping
+        expr: rate(kube_pod_container_status_restarts_total[15m]) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is crash looping"
+          description: "Pod has restarted {{ $value }} times in the last 15 minutes"
+      
+      - alert: PodNotHealth
+        expr: min_over_time(sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"})[15m:1m]) > 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Pod {{ $labels.pod }} in {{ $labels.namespace }} is not healthy"
+          description: "Pod is in {{ $labels.phase }} phase"
+      
+      # Node Alerts
+      - alert: NodeNoAllocatable
+        expr: kube_node_status_allocatable{resource="memory"} < 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node {{ $labels.node }} has no allocatable memory"
+          description: "Node memory allocation issue detected"
+      
+      - alert: NodeNotReady
+        expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Node {{ $labels.node }} is not ready"
+          description: "Node is not in ready state"
+      
+      # Container Alerts
+      - alert: ContainerHighCPU
+        expr: rate(container_cpu_usage_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.container }} has high CPU usage"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+      
+      - alert: ContainerHighMemory
+        expr: container_memory_usage_bytes / container_spec_memory_limit_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container {{ $labels.container }} has high memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+    
+    - name: llmops_application
+      interval: 30s
+      rules:
+      # API Service Alerts
+      - alert: APIServiceDown
+        expr: up{job="llmops-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "LLMOps API service is down"
+          description: "API service is unreachable from Prometheus"
+      
+      - alert: APIHighResponse
+        expr: rate(http_request_duration_seconds_sum[5m]) / rate(http_request_duration_seconds_count[5m]) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "LLMOps API has high response time"
+          description: "Average response time is {{ $value }} seconds"
+      
+      - alert: APIHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "LLMOps API has high error rate"
+          description: "Error rate is {{ $value | humanizePercentage }}"
+      
+      # Streamlit Service Alerts
+      - alert: StreamlitServiceDown
+        expr: up{job="llmops-streamlit"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "LLMOps Streamlit service is down"
+          description: "Streamlit service is unreachable from Prometheus"
+      
+      # Deployment Replica Alerts
+      - alert: APIDeploymentReplicasMismatch
+        expr: kube_deployment_spec_replicas{deployment="llmops-rag-api"} != kube_deployment_status_replicas_available{deployment="llmops-rag-api"}
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "API deployment replicas mismatch"
+          description: "Expected {{ $value }} replicas but only some are available"
+      
+      - alert: StreamlitDeploymentReplicasMismatch
+        expr: kube_deployment_spec_replicas{deployment="llmops-streamlit"} != kube_deployment_status_replicas_available{deployment="llmops-streamlit"}
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Streamlit deployment replicas mismatch"
+          description: "Expected {{ $value }} replicas but only some are available"

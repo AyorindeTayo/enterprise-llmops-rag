@@ -1,0 +1,201 @@
+name: CI/CD Pipeline - Build and Deploy RAG API
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.12
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-cov flake8 black isort
+    
+    - name: Lint with flake8
+      run: |
+        flake8 api_gateway agents services embeddings vector_store --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 api_gateway agents services embeddings vector_store --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    
+    - name: Format check with black
+      run: |
+        black --check api_gateway agents services embeddings vector_store || true
+    
+    - name: Run tests
+      run: |
+        pytest tests/ -v --cov=api_gateway --cov=agents --cov=services --cov-report=xml
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage.xml
+
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    
+    - name: Log in to Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        tags: |
+          type=ref,event=branch
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha
+    
+    - name: Build and push FastAPI image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./infra/docker/Dockerfile
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:${{ github.sha }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-api:latest
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+    
+    - name: Build and push Streamlit image
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ./infra/docker/Dockerfile.streamlit
+        push: true
+        tags: |
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-streamlit:${{ github.sha }}
+          ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-streamlit:latest
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy-minikube:
+    name: Deploy to Minikube
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Start Minikube
+      uses: medyagh/setup-minikube@master
+      with:
+        minikube-version: latest
+        driver: docker
+    
+    - name: Build images in Minikube
+      run: |
+        eval $(minikube docker-env)
+        docker build -f infra/docker/Dockerfile -t llmops-rag-api:latest .
+        docker build -f infra/docker/Dockerfile.streamlit -t llmops-streamlit:latest .
+    
+    - name: Deploy to Kubernetes
+      run: |
+        kubectl apply -f infra/k8s/namespace.yaml
+        kubectl apply -f infra/k8s/persistent-volumes.yaml
+        kubectl apply -f infra/k8s/deployment.yaml
+        kubectl apply -f infra/k8s/service.yaml
+        kubectl get pods -n llmops
+    
+    - name: Wait for rollout
+      run: |
+        kubectl rollout status deployment/llmops-rag-api -n llmops --timeout=5m
+        kubectl rollout status deployment/llmops-streamlit -n llmops --timeout=5m
+    
+    - name: Port forward and test
+      run: |
+        kubectl port-forward svc/llmops-rag-api-service 8000:8000 -n llmops &
+        sleep 10
+        curl -f http://localhost:8000/health || exit 1
+    
+    - name: Show deployment info
+      run: |
+        kubectl get all -n llmops
+        kubectl describe deployment llmops-rag-api -n llmops
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  notify:
+    name: Notify
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    if: always()
+    
+    steps:
+    - name: Send Slack Notification
+      uses: slackapi/slack-github-action@v1
+      with:
+        webhook-url: ${{ secrets.SLACK_WEBHOOK }}
+        payload: |
+          {
+            "text": "RAG API CI/CD Pipeline",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*Pipeline Status*\nTest: ${{ needs.test.result }}\nBuild: ${{ needs.build.result }}"
+                }
+              }
+            ]
+          }
+      if: always()
