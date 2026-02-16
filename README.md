@@ -1,3 +1,175 @@
+
+# Enterprise LLMOps RAG Architecture
+
+## Mermaid Diagram (for GitHub README)
+
+Copy this into your README.md file:
+
+```mermaid
+graph TB
+    %% Styling
+    classDef frontend fill:#00d9ff,stroke:#0891b2,stroke-width:3px,color:#000
+    classDef api fill:#7c3aed,stroke:#5b21b6,stroke-width:3px,color:#fff
+    classDef processing fill:#f59e0b,stroke:#d97706,stroke-width:3px,color:#000
+    classDef storage fill:#10b981,stroke:#059669,stroke-width:3px,color:#000
+    classDef monitoring fill:#ef4444,stroke:#dc2626,stroke-width:3px,color:#fff
+
+    %% Components
+    A[🖥️ Client Frontend<br/>Streamlit / React]
+    B[⚡ API Gateway<br/>FastAPI<br/>- Authentication<br/>- Rate Limiting<br/>- Request Routing]
+    C[🔄 RAG Orchestrator<br/>LangChain<br/>- Query Processing<br/>- Pipeline Management]
+    D[📝 Embeddings Service<br/>OpenAI / BGE<br/>- Text Vectorization<br/>- Semantic Encoding]
+    E[🗄️ Vector Store<br/>FAISS<br/>- Similarity Search<br/>- High-speed Retrieval]
+    F[🤖 LLM Agent<br/>OpenAI GPT-4<br/>- Context-aware Generation<br/>- Multi-turn Conversation]
+    G[📊 Monitoring & Logging<br/>Prometheus + Grafana<br/>- Performance Metrics<br/>- Cost Tracking]
+
+    %% Connections
+    A -->|HTTP Request| B
+    B -->|Process Query| C
+    C -->|Generate Embeddings| D
+    C -->|Search Similar Docs| E
+    D -->|Store Vectors| E
+    E -->|Retrieved Context| C
+    C -->|Augmented Prompt| F
+    F -->|Generated Response| C
+    C -->|Return Answer| B
+    B -->|HTTP Response| A
+    F -->|Metrics & Logs| G
+    B -->|Request Logs| G
+    C -->|Performance Data| G
+
+    %% Apply styles
+    class A frontend
+    class B api
+    class C,F processing
+    class D,E storage
+    class G monitoring
+```
+
+## Alternative: Vertical Flow Diagram
+
+```mermaid
+flowchart TD
+    Start([👤 User Query])
+    
+    subgraph Frontend [" 🖥️ FRONTEND LAYER "]
+        UI[Streamlit / React UI<br/>- Document Upload<br/>- Query Input<br/>- Response Display]
+    end
+    
+    subgraph Gateway [" ⚡ API GATEWAY "]
+        API[FastAPI Server<br/>- Auth & Security<br/>- Rate Limiting<br/>- Load Balancing]
+    end
+    
+    subgraph RAG [" 🤖 RAG PROCESSING ENGINE "]
+        Orchestrator[LangChain Orchestrator]
+        
+        subgraph Parallel [" "]
+            Embed[OpenAI Embeddings<br/>text-embedding-3-small]
+            Vector[(FAISS Vector DB<br/>Indexed Documents)]
+        end
+        
+        LLM[OpenAI GPT-4<br/>Context + Generation]
+    end
+    
+    subgraph Monitoring [" 📊 OBSERVABILITY "]
+        Metrics[Prometheus Metrics]
+        Dashboards[Grafana Dashboards]
+        Logs[Structured Logging]
+    end
+    
+    Start --> UI
+    UI --> API
+    API --> Orchestrator
+    
+    Orchestrator --> Embed
+    Orchestrator --> Vector
+    Embed -.Store.-> Vector
+    Vector -.Retrieve.-> Orchestrator
+    
+    Orchestrator --> LLM
+    LLM --> Orchestrator
+    
+    Orchestrator --> API
+    API --> UI
+    UI --> End([📄 AI Response])
+    
+    API -.Logs.-> Monitoring
+    Orchestrator -.Metrics.-> Monitoring
+    LLM -.Costs.-> Monitoring
+    
+    style Start fill:#00d9ff,stroke:#0891b2,stroke-width:3px
+    style End fill:#10b981,stroke:#059669,stroke-width:3px
+    style Frontend fill:#1e293b,stroke:#00d9ff,stroke-width:2px
+    style Gateway fill:#1e293b,stroke:#7c3aed,stroke-width:2px
+    style RAG fill:#1e293b,stroke:#f59e0b,stroke-width:2px
+    style Monitoring fill:#1e293b,stroke:#ef4444,stroke-width:2px
+```
+
+## Tech Stack Icons Reference
+
+For your documentation, here are the official logo URLs:
+
+### Core Technologies
+- **FastAPI**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/fastapi/fastapi-original.svg
+- **Python**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg
+- **React**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg
+- **Docker**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg
+- **Kubernetes**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kubernetes/kubernetes-plain.svg
+
+### AI/ML Tools
+- **OpenAI**: https://cdn.openai.com/openai-avatar.png
+- **LangChain**: https://cdn.prod.website-files.com/65b8cd72835ceeacd4449a53/66e0ff5db5d62e2dc37a1e97_langchain.webp
+- **FAISS (Meta AI)**: https://avatars.githubusercontent.com/u/15658638?s=200&v=4
+
+### Monitoring
+- **Prometheus**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/prometheus/prometheus-original.svg
+- **Grafana**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/grafana/grafana-original.svg
+
+### Cloud Platforms
+- **AWS**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-original-wordmark.svg
+- **Azure**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/azure/azure-original.svg
+- **GCP**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg
+
+## Using in Different Tools
+
+### For Draw.io / Diagrams.net
+1. Go to https://app.diagrams.net
+2. File > Import > Choose the exported PNG/SVG
+3. Or manually create using the Mermaid plugin
+
+### For Excalidraw
+1. Visit https://excalidraw.com
+2. Use the text tool with monospace font
+3. Import images via File > Open (drag and drop logos)
+
+### For Figma
+1. Copy the HTML file and screenshot it
+2. Or manually recreate with Figma's tools
+3. Import logos from URLs above
+
+### For PowerPoint/Keynote
+1. Open the HTML file in browser
+2. Take a screenshot (full page)
+3. Or use "Export as Image" browser extension
+
+### For LaTeX/Academic Papers
+Use the TikZ package with this structure:
+
+```latex
+\begin{tikzpicture}[
+  node distance=2cm,
+  component/.style={rectangle, draw, fill=blue!20, text width=5em, text centered, minimum height=4em}
+]
+  \node[component] (client) {Client Frontend};
+  \node[component, below of=client] (gateway) {API Gateway};
+  % ... add more nodes
+  \draw[->] (client) -- (gateway);
+  % ... add connections
+\end{tikzpicture}
+```
+
+
+
 ## 🏗️ Architecture
 
 ```
