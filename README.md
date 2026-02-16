@@ -174,6 +174,8 @@ kubectl get services
 
 ---
 
+![Imgur](https://imgur.com/E9Io0ug)
+
 ## **License**
 
 [MIT License](LICENSE)
