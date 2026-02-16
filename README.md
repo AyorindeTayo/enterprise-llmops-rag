@@ -1,50 +1,7 @@
 
 # Enterprise LLMOps RAG Architecture
 
-## Mermaid Diagram (for GitHub README)
 
-
-
-```mermaid
-graph TB
-    %% Styling
-    classDef frontend fill:#00d9ff,stroke:#0891b2,stroke-width:3px,color:#000
-    classDef api fill:#7c3aed,stroke:#5b21b6,stroke-width:3px,color:#fff
-    classDef processing fill:#f59e0b,stroke:#d97706,stroke-width:3px,color:#000
-    classDef storage fill:#10b981,stroke:#059669,stroke-width:3px,color:#000
-    classDef monitoring fill:#ef4444,stroke:#dc2626,stroke-width:3px,color:#fff
-
-    %% Components
-    A[🖥️ Client Frontend<br/>Streamlit / React]
-    B[⚡ API Gateway<br/>FastAPI<br/>- Authentication<br/>- Rate Limiting<br/>- Request Routing]
-    C[🔄 RAG Orchestrator<br/>LangChain<br/>- Query Processing<br/>- Pipeline Management]
-    D[📝 Embeddings Service<br/>OpenAI / BGE<br/>- Text Vectorization<br/>- Semantic Encoding]
-    E[🗄️ Vector Store<br/>FAISS<br/>- Similarity Search<br/>- High-speed Retrieval]
-    F[🤖 LLM Agent<br/>OpenAI GPT-4<br/>- Context-aware Generation<br/>- Multi-turn Conversation]
-    G[📊 Monitoring & Logging<br/>Prometheus + Grafana<br/>- Performance Metrics<br/>- Cost Tracking]
-
-    %% Connections
-    A -->|HTTP Request| B
-    B -->|Process Query| C
-    C -->|Generate Embeddings| D
-    C -->|Search Similar Docs| E
-    D -->|Store Vectors| E
-    E -->|Retrieved Context| C
-    C -->|Augmented Prompt| F
-    F -->|Generated Response| C
-    C -->|Return Answer| B
-    B -->|HTTP Response| A
-    F -->|Metrics & Logs| G
-    B -->|Request Logs| G
-    C -->|Performance Data| G
-
-    %% Apply styles
-    class A frontend
-    class B api
-    class C,F processing
-    class D,E storage
-    class G monitoring
-```
 ![Imgur](https://imgur.com/zqdzvZH.png)
 
 
