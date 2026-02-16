@@ -45,64 +45,8 @@ graph TB
     class D,E storage
     class G monitoring
 ```
+![Imgur](https://imgur.com/zqdzvZH.png)
 
-## Alternative: Vertical Flow Diagram
-
-```mermaid
-flowchart TD
-    Start([👤 User Query])
-    
-    subgraph Frontend [" 🖥️ FRONTEND LAYER "]
-        UI[Streamlit / React UI<br/>- Document Upload<br/>- Query Input<br/>- Response Display]
-    end
-    
-    subgraph Gateway [" ⚡ API GATEWAY "]
-        API[FastAPI Server<br/>- Auth & Security<br/>- Rate Limiting<br/>- Load Balancing]
-    end
-    
-    subgraph RAG [" 🤖 RAG PROCESSING ENGINE "]
-        Orchestrator[LangChain Orchestrator]
-        
-        subgraph Parallel [" "]
-            Embed[OpenAI Embeddings<br/>text-embedding-3-small]
-            Vector[(FAISS Vector DB<br/>Indexed Documents)]
-        end
-        
-        LLM[OpenAI GPT-4<br/>Context + Generation]
-    end
-    
-    subgraph Monitoring [" 📊 OBSERVABILITY "]
-        Metrics[Prometheus Metrics]
-        Dashboards[Grafana Dashboards]
-        Logs[Structured Logging]
-    end
-    
-    Start --> UI
-    UI --> API
-    API --> Orchestrator
-    
-    Orchestrator --> Embed
-    Orchestrator --> Vector
-    Embed -.Store.-> Vector
-    Vector -.Retrieve.-> Orchestrator
-    
-    Orchestrator --> LLM
-    LLM --> Orchestrator
-    
-    Orchestrator --> API
-    API --> UI
-    UI --> End([📄 AI Response])
-    
-    API -.Logs.-> Monitoring
-    Orchestrator -.Metrics.-> Monitoring
-    LLM -.Costs.-> Monitoring
-    
-    style Start fill:#00d9ff,stroke:#0891b2,stroke-width:3px
-    style End fill:#10b981,stroke:#059669,stroke-width:3px
-    style Frontend fill:#1e293b,stroke:#00d9ff,stroke-width:2px
-    style Gateway fill:#1e293b,stroke:#7c3aed,stroke-width:2px
-    style RAG fill:#1e293b,stroke:#f59e0b,stroke-width:2px
-    style Monitoring fill:#1e293b,stroke:#ef4444,stroke-width:2px
 ```
 
 ## Tech Stack Icons Reference
