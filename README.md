@@ -3,7 +3,7 @@
 
 ## Mermaid Diagram (for GitHub README)
 
-Copy this into your README.md file:
+
 
 ```mermaid
 graph TB
@@ -49,68 +49,6 @@ graph TB
 
 ```
 
-## Tech Stack Icons Reference
-
-For your documentation, here are the official logo URLs:
-
-### Core Technologies
-- **FastAPI**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/fastapi/fastapi-original.svg
-- **Python**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg
-- **React**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg
-- **Docker**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg
-- **Kubernetes**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/kubernetes/kubernetes-plain.svg
-
-### AI/ML Tools
-- **OpenAI**: https://cdn.openai.com/openai-avatar.png
-- **LangChain**: https://cdn.prod.website-files.com/65b8cd72835ceeacd4449a53/66e0ff5db5d62e2dc37a1e97_langchain.webp
-- **FAISS (Meta AI)**: https://avatars.githubusercontent.com/u/15658638?s=200&v=4
-
-### Monitoring
-- **Prometheus**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/prometheus/prometheus-original.svg
-- **Grafana**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/grafana/grafana-original.svg
-
-### Cloud Platforms
-- **AWS**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/amazonwebservices/amazonwebservices-original-wordmark.svg
-- **Azure**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/azure/azure-original.svg
-- **GCP**: https://cdn.jsdelivr.net/gh/devicons/devicon/icons/googlecloud/googlecloud-original.svg
-
-## Using in Different Tools
-
-### For Draw.io / Diagrams.net
-1. Go to https://app.diagrams.net
-2. File > Import > Choose the exported PNG/SVG
-3. Or manually create using the Mermaid plugin
-
-### For Excalidraw
-1. Visit https://excalidraw.com
-2. Use the text tool with monospace font
-3. Import images via File > Open (drag and drop logos)
-
-### For Figma
-1. Copy the HTML file and screenshot it
-2. Or manually recreate with Figma's tools
-3. Import logos from URLs above
-
-### For PowerPoint/Keynote
-1. Open the HTML file in browser
-2. Take a screenshot (full page)
-3. Or use "Export as Image" browser extension
-
-### For LaTeX/Academic Papers
-Use the TikZ package with this structure:
-
-```latex
-\begin{tikzpicture}[
-  node distance=2cm,
-  component/.style={rectangle, draw, fill=blue!20, text width=5em, text centered, minimum height=4em}
-]
-  \node[component] (client) {Client Frontend};
-  \node[component, below of=client] (gateway) {API Gateway};
-  % ... add more nodes
-  \draw[->] (client) -- (gateway);
-  % ... add connections
-\end{tikzpicture}
-```
 
 
 
